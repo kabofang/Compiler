@@ -1,0 +1,6 @@
+﻿  func.cpp
+D:\Windows Kits\10\Include\10.0.19041.0\ucrt\stdio.h(41,1): warning C4005: “EOF”: 宏重定义
+E:\Pro\compile\Compiler\LexicalAnalyzer\LexicalAnalyzer\LexicalAnalyzer\funcdefine.h(26): message : 参见“EOF”的前一个定义
+E:\Pro\compile\Compiler\LexicalAnalyzer\LexicalAnalyzer\LexicalAnalyzer\func.h(12,2): warning C4091: “typedef ”: 没有声明变量时忽略“Token”的左侧
+E:\Pro\compile\Compiler\LexicalAnalyzer\LexicalAnalyzer\LexicalAnalyzer\func.cpp(95): warning C4715: “AnalysisOneToken”: 不是所有的控件路径都返回值
+  LexicalAnalyzer.vcxproj -> E:\Pro\compile\Compiler\LexicalAnalyzer\LexicalAnalyzer\Debug\LexicalAnalyzer.exe
