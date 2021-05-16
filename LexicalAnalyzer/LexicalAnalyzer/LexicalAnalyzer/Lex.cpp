@@ -4,7 +4,7 @@
 #include "func.h"
 char* pCur;
 bool LexAnalysis(const char* src, const char* dyd, const char* err) {
-	FILE* fp;
+	FILE* fp, *fpErr;
 	if (!(fp = fopen(src, "r"))) {
 		fprintf(stderr, "Error:Source file open fail!\n");
 		return false;
@@ -13,19 +13,21 @@ bool LexAnalysis(const char* src, const char* dyd, const char* err) {
 	int FileSize = ftell(fp);
 	fseek(fp, 0L, SEEK_SET);
 	char* pSrc;
-	pSrc = (char*)malloc(FileSize+2);
+	pSrc = (char*)malloc(FileSize+1);
 	fread(pSrc, 1, FileSize,fp);
-	if (pSrc[FileSize - 1] != '\n') {
-		pSrc[FileSize] = '\n';
-		pSrc[FileSize+1] = EOF;
+	int LineNum = 0;
+	for (int i = 0; i < FileSize; i++) {
+		if (pSrc[i] == '\n')
+			++LineNum;
 	}
-	else
-		pSrc[FileSize] = EOF;
+	pSrc[FileSize- LineNum] = EOF;
+
 	pCur = pSrc;
 	fclose(fp);
 	fp = fopen(dyd, "w");
+	fpErr = fopen(err, "w");
 	while (1) {
-		Token Temp = AnalysisOneToken();
+		Token Temp = AnalysisOneToken(fpErr);
 		if (Temp.type != EOF) {
 			GenFile(fp,Temp);
 			fflush(fp);
@@ -35,6 +37,10 @@ bool LexAnalysis(const char* src, const char* dyd, const char* err) {
 		break;
 	}
 	fclose(fp);
+	fclose(fpErr);
+	/*map<string,int>::iterator it;
+	for (it = ReverseMap.begin(); it != ReverseMap.end(); it++)
+		delete (string*)(&(it->first));*/
 	return true;
 }
 

@@ -2,9 +2,11 @@
 using namespace std;
 map<string,int> ReverseMap;
 map<int, string> ReverseIdxMap;
-Token AnalysisOneToken() {
+Token AnalysisOneToken(FILE*fpErr) {
 	static int IsBuild;
+	static int LineNum;
 	if (!IsBuild) {
+		LineNum = 1;
 		IsBuild = 1;
 		BuildMap();
 	}
@@ -24,75 +26,113 @@ Token AnalysisOneToken() {
 		while (1) {
 			CurChar = GetNextChar();
 			if (++Len > VAR_LEN) {
-				Error(ERR_TOLONG,NULL);
+				Error(LineNum,ERR_TOLONG,NULL,fpErr);
 				ProcToNext();
-				return Token{ ERROR };
+				ret = BuildToken(ERROR, "ERROR");
+				return ret;
 			}
 			if (IsReserveChar(CurChar))
 				break;
 			AddChar(token, CurChar);
 			if (!isalnum(CurChar)) {
 				IsError = 1;
-				Error(ERR_INVVAR,(void*)CurChar);
+				Error(LineNum, ERR_INVCHAR,(void*)CurChar,fpErr);
 			}
 		}
 		--pCur;
 
-		if (IsError)
-			return Token{ ERROR };
+		if (IsError) {
+			ret = BuildToken(ERROR, "ERROR");
+			return ret;
+		}
 
-		if (Num = IsReserve(token)) 
-			ret = { Num };
+		if (Num = IsReserve(token))
+			ret = BuildToken(Num, token);
 		else 
-			ret = { VAR };
-		memset(ret.str, 0, VAR_LEN);
-		memmove(ret.str, token, strlen(token));
+			ret = BuildToken(VAR, token);
 		return ret;
 	CASE_NUM
 		AddChar(token, CurChar);
 		Len = 1;
 		while (1) {
 		CurChar = GetNextChar();
+		if (++Len > VAR_LEN) {
+			Error(LineNum, ERR_TOLONG, NULL, fpErr);
+			ProcToNext();
+			ret = BuildToken(ERROR, "ERROR");
+			return ret;
+		}
 		if (IsReserveChar(CurChar))
 			break;
 		AddChar(token, CurChar);
 		if (!isdigit(CurChar)) {
 			IsError = 1;
-			Error(ERR_INVVAR, (void*)CurChar);
+			Error(LineNum, ERR_INVCHAR, (void*)CurChar,fpErr);
 			ProcToNext();
-			return Token{ ERROR };
+			ret = BuildToken(ERROR, "ERROR");
+			return ret;
 		}
 	}
 	--pCur;
 
-	if (IsError)
-		return Token{ ERROR };
-	ret = { CONST };
-	memset(ret.str, 0, VAR_LEN);
-	memmove(ret.str, token, strlen(token));
+	if (IsError) {
+		ret = BuildToken(ERROR, "");
+		return ret;
+	}
+	ret = BuildToken(CONST, token);
 	return ret;
 
-	case EOF:
-		ret = { EOF };
-		memset(ret.str, 0, VAR_LEN);
-		memmove(ret.str, "EOF", strlen("EOF"));
+	case '\n':
+		LineNum++;
+		ret = BuildToken(EOLN, "EOLN");
 		return ret;
+
+	case '(':
+	case ')':
+	case '*':
+	case '-':
+	case '=':
 	case ';':
-		ret = { SEM };
-		memset(ret.str, 0, VAR_LEN);
-		memmove(ret.str, ";", strlen(";"));
-		ToNextLine();
+		AddChar(token, CurChar);
+		ret = BuildToken(ReverseMap[token], "EOLN");
 		return ret;
+
+	case EOF:
+		ret = BuildToken(EOF, "EOF");
+		return ret;
+
+	case '<':
+		AddChar(token, CurChar);
+		CurChar = GetNextChar();
+		if ('=' == CurChar || '>' == CurChar)
+			AddChar(token, CurChar);
+		else
+			--pCur;
+		ret = BuildToken(ReverseMap[token], token);
+		return ret;
+
+	case '>':
+		AddChar(token, CurChar);
+		CurChar = GetNextChar();
+		if ('=' == CurChar)
+			AddChar(token, CurChar);
+		else
+			--pCur;
+		ret = BuildToken(ReverseMap[token], token);
+		return ret;
+
 	case ':':
-		if ('=' != GetNextChar())
-			Error(ERR_INVCHR, (void*)"");
-		ret = { ASS };
-		memset(ret.str, 0, VAR_LEN);
-		memmove(ret.str, ":=", strlen(":="));
+		if ('=' != GetNextChar()) {
+			Error(LineNum, ERR_INVCOLON, (void*)"", fpErr);
+			ret = BuildToken(ERROR, "ERROR");
+			--pCur;
+			return ret;
+		}
+		ret = BuildToken(ASS, ":=");
 		return ret;
 	}
 
-}
+}//!strcmp(token,"write")
 void JmpBlank() {
 	while (*pCur++ == ' ')
 		continue;
@@ -115,9 +155,6 @@ int IsReserve(char* str) {
 	return ReverseMap[temp];
 }
 
-void Error(int x,void* pArg) {
-
-}
 
 int IsReserveChar(char ch) {
 	switch (ch) {
@@ -126,10 +163,13 @@ int IsReserveChar(char ch) {
 	case '=':
 	case ':':
 	case '(':
+	case ')':
 	case '-':
 	case '*':
 	case ';':
 	case ' ':
+	case '\n':
+	case EOF:
 		return true;
 	}
 	return false;
@@ -148,6 +188,29 @@ void ProcToNext() {
 void ToNextLine() {
 	while ('\n' != GetNextChar())
 		continue;
+}
+
+Token BuildToken(int Num,const char* str) {
+	Token temp;
+	temp.type = Num;
+	memset(temp.str, 0, VAR_LEN);
+	memmove(temp.str, str, strlen(str));
+	return temp;
+}
+
+
+void Error(int LineNum, int Errno, void* pArg, FILE* fpErr) {
+	switch (Errno) {
+	case ERR_INVCOLON:
+		fprintf(fpErr, "Error %d , Line %d : %s\n", Errno, LineNum, "Colon mismatch");
+		break;
+	case ERR_INVCHAR:
+		fprintf(fpErr, "Error %d , Line %d : %s\n", Errno, LineNum, "Illegal character");
+		break;
+	case ERR_TOLONG:
+		fprintf(fpErr, "Error %d , Line %d : %s\n", Errno, LineNum, "Identifier is too long");
+		break;
+	}
 }
 
 void BuildMap() {

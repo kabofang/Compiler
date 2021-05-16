@@ -13,13 +13,14 @@ typedef struct Token {
 extern char* pCur;
 extern map<string, int> ReverseMap;
 extern map<int, string> ReverseIdxMap;
-Token AnalysisOneToken();
+Token AnalysisOneToken(FILE*fp);
 void JmpBlank();
 char GetNextChar();
 void AddChar(char*, char);
 int IsReserve(char* str);
-void Error(int x, void* pArg);
+void Error(int LineNum,int Errno, void* pArg,FILE* fpErr);
 int IsReserveChar(char);
 void ProcToNext();
 void BuildMap();
 void ToNextLine();
+Token BuildToken(int Num, const char* str);

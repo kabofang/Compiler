@@ -28,9 +28,10 @@
 
 #define VAR_LEN 16
 
-#define ERR_TOLONG 1
-#define ERR_INVVAR 2
-#define ERR_INVCHR 3
+#define ERR_TOLONG 1	/*Identifier is too long*/
+#define ERR_INVCHAR 2	/*Illegal character*/
+#define ERR_INVCOLON 3	/*Colon mismatch*/
+
 
 #define CASE_ALPHA	case 'a':\
 					case 'b':\
